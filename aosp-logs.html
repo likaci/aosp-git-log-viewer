@@ -133,7 +133,7 @@
 
                 const messageSpan = document.createElement('span');
                 messageSpan.classList.add('message');
-                messageSpan.textContent = log.message;
+                messageSpan.textContent = log.message.replaceAll("＂", "\"");
                 line.appendChild(messageSpan);
 
                 repoPre.appendChild(line);
