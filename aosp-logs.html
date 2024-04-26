@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AOSP Logs</title>
+    <style>
+        h2 {
+            margin-top: 20px;
+        }
+
+        pre {
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .line {
+            width: 100%;
+            margin: 0;
+            padding: 2px;
+        }
+
+        .line:hover {
+            background-color: lightgray;
+        }
+
+        .commit-hash {
+            cursor: pointer;
+            color: blue;
+        }
+
+        .date-time {
+            margin-left: 10px;
+        }
+
+        .author {
+            color: #888;
+            margin-left: 5px;
+        }
+
+        .message {
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .side-nav {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            bottom: 10px;
+            width: 300px;
+            background-color: #f7f7f7;
+            padding: 10px;
+            border: 1px solid #ddd;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+
+        .side-nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .side-nav ul li a {
+            white-space: nowrap;
+            text-decoration: none;
+            color: blue;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>AOSP Logs</h1>
+
+<div class="side-nav">
+    <ul id="indexList"></ul>
+</div>
+
+<script src="data.js"></script>
+<script>
+    function loadCheckState(repoPath, logHash) {
+        return localStorage.getItem(logHash) === "true";
+    }
+
+    function saveCheckState(repoPath, logHash, isChecked) {
+        localStorage.setItem(logHash, isChecked);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const indexList = document.getElementById('indexList');
+
+        repoLogs.forEach((repo, index) => {
+            if (repo.path.includes("xxxxx/apps") || repo.logs.length === 0) {
+                return;
+            }
+
+            const repoDiv = document.createElement('div');
+            const repoHeader = document.createElement('h2');
+            repoHeader.textContent = `${repo.path} (${repo.logs.length})`;
+            repoHeader.id = `repo-${index}`;
+            repoDiv.appendChild(repoHeader);
+
+            const repoPre = document.createElement('pre');
+            repo.logs.reverse().forEach(log => {
+                const line = document.createElement('p');
+                line.classList.add('line');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `checkbox-${log.hash}`;
+                checkbox.checked = loadCheckState(repo.path, log.hash);
+                checkbox.addEventListener('change', (e) => {
+                    saveCheckState(repo.path, log.hash, e.target.checked);
+                });
+                line.appendChild(checkbox);
+
+                const hashSpan = document.createElement('span');
+                hashSpan.classList.add('commit-hash');
+                hashSpan.textContent = log.hash;
+                hashSpan.addEventListener('click', () => {
+                    const command = `cd ${repo.path} && git show ${log.hash}`;
+                    navigator.clipboard.writeText(command);
+                });
+                line.appendChild(hashSpan);
+
+                const dateTimeSpan = document.createElement('span');
+                dateTimeSpan.classList.add('date-time');
+                dateTimeSpan.textContent = log.date;
+                line.appendChild(dateTimeSpan);
+
+                const authorSpan = document.createElement('span');
+                authorSpan.classList.add('author');
+                authorSpan.textContent = log.author;
+                line.appendChild(authorSpan);
+
+                const messageSpan = document.createElement('span');
+                messageSpan.classList.add('message');
+                messageSpan.textContent = log.message;
+                line.appendChild(messageSpan);
+
+                repoPre.appendChild(line);
+            });
+            repoDiv.appendChild(repoPre);
+            document.body.appendChild(repoDiv);
+
+            // side nav
+            const listItem = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `#${repoHeader.id}`;
+            link.textContent = `${repo.path} (${repo.logs.length})`;
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const headerElement = document.getElementById(repoHeader.id);
+                headerElement.scrollIntoView();
+            });
+            listItem.appendChild(link);
+            indexList.appendChild(listItem);
+        });
+    });
+</script>
+</body>
+</html>
